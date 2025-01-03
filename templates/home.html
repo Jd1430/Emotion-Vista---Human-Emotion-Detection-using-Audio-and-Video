@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7fc;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        input[type="file"] {
+            font-size: 16px;
+            padding: 10px;
+            background-color: #fff;
+            border: 2px solid #4caf50;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        button {
+            font-size: 18px;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4caf50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #live-camera-container {
+            display: none;
+            width: 80%;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        iframe {
+            width: 80%;
+            height: 60vh;
+            border: 2px solid #4caf50;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        #stop-camera-button {
+            display: none;
+            align:center;
+        }
+
+        #progress-section {
+            margin-top: 30px;
+            width: 80%;
+            max-width: 500px;
+            display: none;
+            text-align: center;
+        }
+
+        #progress-bar {
+            width: 100%;
+            height: 25px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        #progress-bar-inner {
+            height: 100%;
+            width: 0;
+            background-color: #4caf50;
+            text-align: center;
+            color: white;
+            line-height: 25px;
+            border-radius: 5px;
+        }
+
+        #loading-spinner {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .download-section {
+            display: none;
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .download-section a {
+            text-decoration: none;
+            font-size: 20px;
+            padding: 15px 30px;
+            margin: 10px;
+            background-color: #4caf50;
+            color: white;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .download-section a:hover {
+            background-color: #45a049;
+        }
+
+        /* Media Queries for Responsiveness */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            input[type="file"], button {
+                font-size: 14px;
+                padding: 8px;
+                width: 90%;
+            }
+            .download-section a {
+                font-size: 16px;
+                padding: 12px 25px;
+            }
+        }
+    </style>
+    <script>
+        function uploadVideo() {
+            const fileInput = document.getElementById('file');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("Please select a file.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show loading spinner during upload
+            document.getElementById('loading-spinner').style.display = 'inline-block';
+
+            fetch('/upload', { method: 'POST', body: formData })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        document.getElementById('loading-spinner').style.display = 'none';
+                    } else {
+                        document.getElementById('progress-section').style.display = 'block';
+                        trackProgress(data.filename);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error uploading video:', error);
+                    document.getElementById('loading-spinner').style.display = 'none';
+                });
+        }
+
+        function trackProgress(filename) {
+            const interval = setInterval(() => {
+                fetch('/progress')
+                    .then(response => response.json())
+                    .then(data => {
+                        const progressBarInner = document.getElementById('progress-bar-inner');
+                        progressBarInner.style.width = `${data.percentage}%`;
+                        progressBarInner.textContent = `${data.percentage}%`;
+        
+                        if (data.percentage >= 100) {
+                            clearInterval(interval);
+        
+                            document.getElementById('progress-section').style.display = 'none';
+                            document.getElementById('download-section').style.display = 'block';
+        
+                            // Update download links
+                            document.getElementById('download-video').href = `/download/${filename}/processed`;
+                            document.getElementById('download-report').href = `/download/${filename}/report`;
+        
+                            document.getElementById('loading-spinner').style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        clearInterval(interval);
+                        console.error("Error tracking progress:", error);
+                        alert("Unable to track progress. Please try again.");
+                        document.getElementById('loading-spinner').style.display = 'none';
+                    });
+            }, 1000);
+        }
+        
+        function startCamera() {
+            fetch('/start_camera', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        document.getElementById('live-camera-container').style.display = 'block';
+                        document.getElementById('stop-camera-button').style.display = 'inline-block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error starting camera:', error);
+                });
+        }
+        
+        function stopCamera() {
+            fetch('/stop_camera', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        document.getElementById('live-camera-container').style.display = 'none';
+                        document.getElementById('stop-camera-button').style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error stopping camera:', error);
+                });
+        }
+        
+    </script>
+</head>
+<body>
+    <h1>EMOTION VISTA</h1>
+    <input type="file" id="file" accept="video/*">
+    <button onclick="uploadVideo()">Process the Video</button><br/>
+    <button onclick="startCamera()">Open Live Camera</button>
+
+    <div id="live-camera-container">
+        <iframe src="/live_camera_feed"></iframe>
+        <button id="stop-camera-button" onclick="stopCamera()">Stop Camera</button>
+    </div>
+
+    <div id="loading-spinner" class="hidden">
+        <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #4caf50;"></i>
+    </div>
+
+    <div id="progress-section">
+        <h3>Processing Video...</h3>
+        <div id="progress-bar">
+            <div id="progress-bar-inner"></div>
+        </div>
+    </div>
+
+    <div id="download-section" class="download-section">
+        <h3>Processing Complete!</h3>
+        <a id="download-video" download>Download Processed Video</a>
+        <a id="download-report" download>Download Report</a>
+    </div>
+</body>
+</html>
