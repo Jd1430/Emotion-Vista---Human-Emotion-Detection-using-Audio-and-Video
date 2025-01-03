@@ -37,9 +37,7 @@ Emotion Vista is a web application designed for emotion detection from videos an
 
 1. **Clone the Repository**  
    Clone the repository to your local machine:
-   ```bash
-   git clone <repository-url>
-   cd Emotion_Vista
+
 2. **Install Dependencies**  
    Install the required libraries using the requirements.txt file:
    ```bash
