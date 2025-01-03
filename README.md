@@ -1,5 +1,4 @@
-![Web Output4](https://github.com/user-attachments/assets/240a8129-8bcd-40ac-8058-68acbe43c8f6)# Emotion Vista
-
+# EMOTION-VISTA (Human Emotion Detection Using Audio and Video Inputs)
 ## Approach
 Emotion Vista is a web application designed for emotion detection from videos and live camera feeds using machine learning models. The platform combines both **audio emotion recognition** and **face emotion detection** to process multimedia content, generate reports, and display real-time emotional analysis.
 
